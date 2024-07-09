@@ -13,7 +13,7 @@ import 'auth_storage.dart';
 
 class MobileOAuth extends CoreOAuth {
   final AuthStorage _authStorage;
-  final RequestCode _requestCode;
+  final RequestCode requestCode;
   final RequestToken _requestToken;
 
   Completer<String?>? _accessTokenCompleter;
@@ -25,7 +25,7 @@ class MobileOAuth extends CoreOAuth {
           tokenIdentifier: config.tokenIdentifier,
           aOptions: config.aOptions,
         ),
-        _requestCode = RequestCode(config),
+        requestCode = RequestCode(config),
         _requestToken = RequestToken(config);
 
   /// Perform Azure AD login.
@@ -104,7 +104,7 @@ class MobileOAuth extends CoreOAuth {
   @override
   Future<void> logout({bool showPopup = true}) async {
     await _authStorage.clear();
-    await _requestCode.clearCookies();
+    await requestCode.clearCookies();
   }
 
   @override
@@ -157,7 +157,7 @@ class MobileOAuth extends CoreOAuth {
 
   /// Authorize user via refresh token or web gui if necessary.
   Future<Either<Failure, Token>> _performFullAuthFlow() async {
-    var code = await _requestCode.requestCode();
+    var code = await requestCode.requestCode();
     if (code == null) {
       return Left(AadOauthFailure(
         errorType: ErrorType.accessDeniedOrAuthenticationCanceled,

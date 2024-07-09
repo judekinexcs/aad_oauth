@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import 'model/config.dart';
 import 'request/authorization_request.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 class RequestCode {
   final Config _config;
@@ -13,12 +16,28 @@ class RequestCode {
   late NavigationDelegate _navigationDelegate;
   String? _code;
 
+  late final WebViewController controller;
+  final cookieManager = WebViewCookieManager();
+
   RequestCode(Config config)
       : _config = config,
         _authorizationRequest = AuthorizationRequest(config),
         _redirectUriHost = Uri.parse(config.redirectUri).host {
     _navigationDelegate = NavigationDelegate(
       onNavigationRequest: _onNavigationRequest,
+      onWebResourceError: (error) {
+        print('onWebResource error: ${error.description}');
+      },
+      onUrlChange: (url) {
+        print('onUrlChange: ${url.url ?? "empty url"}');
+      },
+      onPageFinished: (url) {
+        Task(() async {
+          final String cookies = await controller
+              .runJavaScriptReturningResult('document.cookie') as String;
+          print('onPageFinished: ${url}, cookie: ${cookies}');
+        }).run();
+      },
     );
   }
 
@@ -27,9 +46,21 @@ class RequestCode {
 
     final urlParams = _constructUrlParams();
     final launchUri = Uri.parse('${_authorizationRequest.url}?$urlParams');
-    final controller = WebViewController();
+    controller = WebViewController();
     await controller.setNavigationDelegate(_navigationDelegate);
     await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
+
+    final WebViewCookieManager cookieManager = WebViewCookieManager();
+    if (WebViewPlatform.instance is WebKitWebViewPlatform) {
+      final WebKitWebViewCookieManager webKitManager =
+          cookieManager.platform as WebKitWebViewCookieManager;
+    } else if (WebViewPlatform.instance is AndroidWebViewPlatform) {
+      final AndroidWebViewCookieManager androidManager =
+          cookieManager.platform as AndroidWebViewCookieManager;
+      androidManager.setAcceptThirdPartyCookies(
+          controller.platform as AndroidWebViewController, true);
+      print('web controller accepted 3rd party cookies');
+    }
 
     await controller.setBackgroundColor(Colors.transparent);
     await controller.setUserAgent(_config.userAgent);
@@ -95,7 +126,9 @@ class RequestCode {
         _code = uri.queryParameters['code'];
         _config.navigatorKey.currentState!.pop();
       }
-    } catch (_) {}
+    } catch (error) {
+      print('onNavigationRequest error: $error');
+    }
     return NavigationDecision.navigate;
   }
 
