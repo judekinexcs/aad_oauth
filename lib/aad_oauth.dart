@@ -12,9 +12,9 @@ import 'model/config.dart';
 
 /// Authenticates a user with Azure Active Directory using OAuth2.0.
 class AadOAuth {
-  final CoreOAuth _coreOAuth;
+  final CoreOAuth coreOAuth;
 
-  AadOAuth(Config config) : _coreOAuth = CoreOAuth.fromConfig(config);
+  AadOAuth(Config config) : coreOAuth = CoreOAuth.fromConfig(config);
 
   /// Perform Azure AD login.
   ///
@@ -24,23 +24,23 @@ class AadOAuth {
   /// will be returned, as long as we deem it still valid. In the event that
   /// both access and refresh tokens are invalid, the web gui will be used.
   Future<Either<Failure, Token>> login({bool refreshIfAvailable = false}) =>
-      _coreOAuth.login(refreshIfAvailable: refreshIfAvailable);
+      coreOAuth.login(refreshIfAvailable: refreshIfAvailable);
 
   /// Tries to silently login. will try to use the existing refresh token to get
   /// a new token.
-  Future<Either<Failure, Token>> refreshToken() => _coreOAuth.refreshToken();
+  Future<Either<Failure, Token>> refreshToken() => coreOAuth.refreshToken();
 
   /// Retrieve cached OAuth Access Token.
-  Future<String?> getAccessToken() async => _coreOAuth.getAccessToken();
+  Future<String?> getAccessToken() async => coreOAuth.getAccessToken();
 
   /// Retrieve cached OAuth Id Token.
-  Future<String?> getIdToken() async => _coreOAuth.getIdToken();
+  Future<String?> getIdToken() async => coreOAuth.getIdToken();
 
   /// Perform Azure AD logout.
   Future<void> logout({bool showWebPopup = true}) async =>
-      _coreOAuth.logout(showPopup: showWebPopup);
+      coreOAuth.logout(showPopup: showWebPopup);
 
   /// Checks if MSAL has cached information
   Future<bool> get hasCachedAccountInformation async =>
-      _coreOAuth.hasCachedAccountInformation;
+      coreOAuth.hasCachedAccountInformation;
 }
